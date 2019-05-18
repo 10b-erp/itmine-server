@@ -1,52 +1,49 @@
 // require environment variables from .env
 require('dotenv').config();
 
+// mongoose schemas
 const { Address, Tracking, User, Package } = require('./db');
+
+// some utility functions
+const Util = require('./util');
 
 // web server
 const express = require('express');
+const bcrypt = require('bcryptjs');
+const bodyParser = require('body-parser');
+const session = require('express-session');
 const app = express();
+app.use(session({
+  secret: process.env.EXPRESS_SESSION_SECRET,
+  resave: true,
+  saveUnitialized: true,
+  cookie: { maxAge: 30*24*60*60*1000 }
+}));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 // web server endpoints
-app.post('/api/orders', (req, res) => {
-  Order.find({ })
+app.post('/api/signin', (req, res) => {
+
+  // get and sanitize email and password
+  const email = Util.sanitize(req.body.email);
+  const password = Util.sanitize(req.body.password);
+
+  // find user
+  User.find({ email: email })
     .then(data => {
-      res.send(data);
+      if (data === null) {
+        res.send(Util.generateResponse(1, 'Invalid credentials'));
+      } else if(bcrypt.compareSync(password, data.password)) {
+        res.send(Util.generateResponse(0));
+      } else {
+        res.send(Util.generateResponse(1, 'Invalid credentials'));
+      }
     })
     .catch(err => {
-      console.error(err);
-      res.send(false);
+      res.send(Util.generateResponse(2, 'Database error', err));
     });
 });
-
-app.post('/api/stores', (req, res) => {
-  Store.find({ })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      console.error(err);
-      res.send(false);
-    });
-});
-
-app.post('/api/brands', (req, res) => {
-  Brand.find({ })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      console.error(err);
-      res.send(false);
-    });
-});
-
-// new Brand({
-//   name: 'JCPenny\'s',
-//   category: 'clothing'
-// }).save()
-//   .then(() => console.log('Successfully saved!'))
-//   .catch(err => console.error('Error ' + err));
 
 // listen on web server and statically serve files
 app.use(express.static('public'));

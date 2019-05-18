@@ -2,7 +2,10 @@
   "name": "itmine-server",
   "version": "1.0.0",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "latest",
     "express": "^4.16.4",
+    "express-session": "^1.16.1",
     "mongoose": "^5.5.9"
   },
   "devDependencies": {
