@@ -1,58 +1,56 @@
 // require environment variables from .env
 require('dotenv').config();
 
-// database connection
-const mongoose = require('mongoose');
-mongoose.connect(process.env.DB_URL, { useNewUrlParser: true })
-  .then(() => console.info('Connected to mongodb'))
-  .catch(err => console.error('Error connecting to mongodb: ' + err));
-
-// defining schemas
-const addressSchema = new mongoose.Schema({
-  name: String,
-  phone: String,
-  company_name: String,
-  address_line1: String,
-  city_locality: String,
-  state_province: String,
-  postal_code: String,
-  country_code: String,
-  address_residential_locator: String
-});
-const trackingInfoSchema = new mongoose.Schema({
-  // working here
-});
-const reviewSchema = new mongoose.Schema({
-  // working here
-});
-const orderSchema = new mongoose.Schema({
-  store_id: String,
-  address: addressSchema,
-  trackingInfo: trackingInfoSchema,
-  reviews: [reviewSchema]
-});
-const storeSchema = new mongoose.Schema({
-  brand_id: String,
-  address: addressSchema,
-});
-const brandSchema = new mongoose.Schema({
-  name: String,
-  category: String
-});
-
-// defining models
-const AddressInfo = new mongoose.model('addressinfo', addressSchema);
-const TrackingInfo = new mongoose.model('trackinginfo', trackingInfoSchema);
-const Order = new mongoose.model('order', orderSchema);
-const Store = new mongoose.model('store', storeSchema);
-const Brand = new mongoose.model('brand', brandSchema);
+const { AddressInfo, TrackingInfo, Order, Store, Brand } = require('./db');
 
 // web server
 const express = require('express');
 const app = express();
 
 // web server endpoints
-app.use(express.static('public'));
+app.post('/api/orders', (req, res) => {
+  Order.find({ })
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(false);
+    });
+});
 
-// listen on web server
-app.listen(process.env.port || 5000, () => console.info('Listening on port ' + process.env.PORT || 5000));
+app.post('/api/stores', (req, res) => {
+  Store.find({ })
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(false);
+    });
+});
+
+app.post('/api/brands', (req, res) => {
+  Brand.find({ })
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(false);
+    });
+});
+
+// new Brand({
+//   name: 'JCPenny\'s',
+//   category: 'clothing'
+// }).save()
+//   .then(() => console.log('Successfully saved!'))
+//   .catch(err => console.error('Error ' + err));
+
+// listen on web server and statically serve files
+app.use(express.static('public'));
+app.use((req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+app.listen(process.env.port || 5000, () => console.info('Listening on port ' + (process.env.PORT || 5000)));
