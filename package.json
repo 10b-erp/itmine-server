@@ -1,0 +1,10 @@
+{
+  "name": "itmine-server",
+  "version": "1.0.0",
+  "dependencies": {
+    "mongoose": "^5.5.9"
+  },
+  "devDependencies": {
+    "dotenv": "^8.0.0"
+  }
+}
