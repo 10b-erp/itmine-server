@@ -19,38 +19,29 @@ const addressSchema = new mongoose.Schema({
   country_code: String,
   address_residential_locator: String
 });
-const trackingInfoSchema = new mongoose.Schema({
+const trackingSchema = new mongoose.Schema({
   // working here
 });
-const reviewSchema = new mongoose.Schema({
-  // working here
-});
-const orderSchema = new mongoose.Schema({
-  store_id: String,
+const userSchema = new mongoose.Schema({
   address: addressSchema,
-  trackingInfo: trackingInfoSchema,
-  reviews: [reviewSchema]
-});
-const storeSchema = new mongoose.Schema({
-  brand_id: String,
-  address: addressSchema,
-});
-const brandSchema = new mongoose.Schema({
+  email: String,
   name: String,
-  category: String
+  phone: String
+});
+const packageSchema = new mongoose.Schema({
+  uid: String,
+  tracking: trackingSchema
 });
 
 // defining models
-const AddressInfo = new mongoose.model('addressinfo', addressSchema);
-const TrackingInfo = new mongoose.model('trackinginfo', trackingInfoSchema);
-const Order = new mongoose.model('order', orderSchema);
-const Store = new mongoose.model('store', storeSchema);
-const Brand = new mongoose.model('brand', brandSchema);
+const Address = new mongoose.model('address', addressSchema);
+const Tracking = new mongoose.model('tracking', trackingSchema);
+const User = new mongoose.model('user', userSchema);
+const Package = new mongoose.model('package', packageSchema);
 
 module.exports = {
-  AddressInfo: AddressInfo,
-  TrackingInfo: TrackingInfo,
-  Order: Order,
-  Store: Store,
-  Brand: Brand
+  Address: Address,
+  Tracking: Tracking,
+  User: User,
+  Package: Package
 };

@@ -1,7 +1,7 @@
 // require environment variables from .env
 require('dotenv').config();
 
-const { AddressInfo, TrackingInfo, Order, Store, Brand } = require('./db');
+const { Address, Tracking, User, Package } = require('./db');
 
 // web server
 const express = require('express');
