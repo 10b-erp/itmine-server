@@ -8,7 +8,7 @@ mongoose.connect(process.env.DB_URL, { useNewUrlParser: true })
   .catch(err => console.error('Error connecting to mongodb: ' + err));
 
 // defining schemas
-const shippingInfoSchema = new mongoose.Schema({
+const addressSchema = new mongoose.Schema({
   name: String,
   phone: String,
   company_name: String,
@@ -22,19 +22,37 @@ const shippingInfoSchema = new mongoose.Schema({
 const trackingInfoSchema = new mongoose.Schema({
   // working here
 });
-const userSchema = new mongoose.Schema({
-  balance: Number,
-  shippingInfo: shippingInfoSchema
+const reviewSchema = new mongoose.Schema({
+  // working here
 });
-const itemSchema = new mongoose.Schema({
-  uid: String,
+const orderSchema = new mongoose.Schema({
+  store_id: String,
+  address: addressSchema,
   trackingInfo: trackingInfoSchema,
-  isActive: Boolean,
-  isCompleted: Boolean
+  reviews: [reviewSchema]
+});
+const storeSchema = new mongoose.Schema({
+  brand_id: String,
+  address: addressSchema,
+});
+const brandSchema = new mongoose.Schema({
+  name: String,
+  category: String
 });
 
 // defining models
-const ShippingInfo = new mongoose.model('shippinginfo', shippingInfoSchema);
+const AddressInfo = new mongoose.model('addressinfo', addressSchema);
 const TrackingInfo = new mongoose.model('trackinginfo', trackingInfoSchema);
-const User = new mongoose.model('user', userSchema);
-const Item = new mongoose.model('item', itemSchema);
+const Order = new mongoose.model('order', orderSchema);
+const Store = new mongoose.model('store', storeSchema);
+const Brand = new mongoose.model('brand', brandSchema);
+
+// web server
+const express = require('express');
+const app = express();
+
+// web server endpoints
+app.use(express.static('public'));
+
+// listen on web server
+app.listen(process.env.port || 5000, () => console.info('Listening on port ' + process.env.PORT || 5000));
