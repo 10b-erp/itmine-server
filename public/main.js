@@ -563,12 +563,29 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "FoundComponent", function() { return FoundComponent; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "./node_modules/tslib/tslib.es6.js");
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _server_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../server.service */ "./src/app/server.service.ts");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+
+
 
 
 var FoundComponent = /** @class */ (function () {
-    function FoundComponent() {
+    function FoundComponent(server, activatedRoute) {
+        this.server = server;
+        this.activatedRoute = activatedRoute;
     }
     FoundComponent.prototype.ngOnInit = function () {
+        var _this = this;
+        this.activatedRoute.queryParams.subscribe(function (params) {
+            var sid = params['sid'];
+            _this.server.checkSid(sid)
+                .then(function (response) {
+                console.log(response);
+            })
+                .catch(function (err) {
+                console.log(err);
+            });
+        });
     };
     FoundComponent = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Component"])({
@@ -576,7 +593,7 @@ var FoundComponent = /** @class */ (function () {
             template: __webpack_require__(/*! ./found.component.html */ "./src/app/found/found.component.html"),
             styles: [__webpack_require__(/*! ./found.component.css */ "./src/app/found/found.component.css")]
         }),
-        tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [])
+        tslib__WEBPACK_IMPORTED_MODULE_0__["__metadata"]("design:paramtypes", [_server_service__WEBPACK_IMPORTED_MODULE_2__["ServerService"], _angular_router__WEBPACK_IMPORTED_MODULE_3__["ActivatedRoute"]])
     ], FoundComponent);
     return FoundComponent;
 }());
@@ -937,6 +954,10 @@ var ServerService = /** @class */ (function () {
     // order new pps
     ServerService.prototype.orderPPs = function (numPPs) {
         return this.makeApiCall('orderpps', { n: numPPs });
+    };
+    // check if sid exists
+    ServerService.prototype.checkSid = function (sid) {
+        return this.makeApiCall('checksid', { sid: sid });
     };
     ServerService = tslib__WEBPACK_IMPORTED_MODULE_0__["__decorate"]([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_1__["Injectable"])({

@@ -235,6 +235,30 @@ app.post('/api/packages', async (req, res) => {
 
 });
 
+// api endpoint to check if sid works
+app.post('/api/checksid', async (req, res) => {
+
+  // get sid
+  const sid = Util.sanitize(req.body.sid);
+
+  // check if valid
+  if(!mongoose.Types.ObjectId.isValid(sid)) {
+    return res.send(Util.generateResponse(1, 'Invalid sid'));
+  }
+  try {
+    const packageQuery = await Package.find({ _id: new mongoose.Types.ObjectId(sid) });
+    if(packageQuery !== null) {
+      return res.send(Util.generateResponse(0));
+    } else {
+      return res.send(Util.generateResponse(1, 'Invalid sid'));
+    }
+  } catch(err) {
+    res.send(Util.generateResponse(3, 'Error querying database'));
+  }
+
+
+});
+
 // api endpoint to found page
 app.post('/api/found', async (req, res) => {
 
