@@ -260,30 +260,29 @@ app.post('/api/checksid', async (req, res) => {
 });
 
 // api endpoint to found page
-app.post('/api/found', async (req, res) => {
+app.post('/api/setpackageweight', async (req, res) => {
 
   // get sid
-  const sid = Util.sanitize(req.query.sid);
+  const sid = Util.sanitize(req.body.sid);
   if(!sid || !mongoose.Types.ObjectId.isValid(sid)) {
     return res.send(Util.generateResponse(1, 'Invalid SID'));
   }
 
   // get weight
-  const weight = parseInt(Util.sanitize(req.query.weight));
+  const weight = parseInt(Util.sanitize(req.body.weight));
   if(weight <= 0 || weight >= 10000) {
     return res.send(Util.generateResponse(1, 'Invalid weight in ounces (<0 or >625)'));
   }
-
-  // get email (maybe)
-  const email = Util.sanitize(req.query.email);
 
   // query for sid
   try {
     const sidQuery = await Package.findOne({ _id: new mongoose.Types.ObjectId(sid) });
 
-    if(sidQuery.tracking !== null) {
+    if(sidQuery === null || sidQuery.tracking !== null) {
       return res.send(Util.generateResponse(1,'SID already used'));
     }
+    sidQuery.weight = weight;
+    await sidQuery.save();
 
     // get user's shipping data
     const userQuery = await User.findOne({ _id: new mongoose.Types.ObjectId(sidQuery.uid) });
@@ -292,24 +291,24 @@ app.post('/api/found', async (req, res) => {
     const url = 'https://api.shipengine.com/v1/labels';
     const data = {
       "shipment": {
-        "service_code": "ups_ground",
+        "service_code": "fedex_ground",
         "ship_to": {
           "name": userQuery.name,
           "phone": userQuery.phone,
           "company_name": userQuery.company_name,
-          "address_line1": userQuery.address_line1,
-          "address_line2": userQuery.address_line2,
-          "city_locality": userQuery.city_locality,
-          "state_province": userQuery.state_province,
-          "postal_code": userQuery.postal_code,
+          "address_line1": userQuery.address.address_line1,
+          "address_line2": userQuery.address.address_line2,
+          "city_locality": userQuery.address.city_locality,
+          "state_province": userQuery.address.state_province,
+          "postal_code": userQuery.address.postal_code,
           "country_code": "US",
           "address_residential_indicator": "No"
         },
         "ship_from": {
-          "name": "ItMine Corp.",
+          "name": "ItMine Corp",
           "phone": "212-224-5123",
-          "company_name": "ItMine Corp.",
-          "address_line1": "29 3rd Ave.",
+          "company_name": "ItMine Corp",
+          "address_line1": "29 3rd Ave",
           "address_line2": "Ste. 10B",
           "city_locality": "New York",
           "state_province": "NY",
@@ -330,10 +329,18 @@ app.post('/api/found', async (req, res) => {
 
     Util.makeRequest(url, data)
       .then(response => {
+        sidQuery.tracking = {
+          shipment_id: response.shipment_id,
+          tracking_number: response.tracking_number,
+          label_download: response.label_download.pdf
+        };
+        sidQuery.save();
         console.log(response);
+        res.send(Util.generateResponse(0, '', sidQuery.tracking));
       })
       .catch(err => {
         console.log(err);
+        res.send(Util.generateResponse(3, 'Error creating response', {}, err));
       });
   } catch(err) {
     return res.send(Util.generateResponse(3, 'Database query error', {}, err));
