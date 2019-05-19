@@ -1,5 +1,7 @@
 // require environment variables from .env
-require('dotenv').config();
+if(process.env.NODE_ENV === 'dev') {
+  require('dotenv').config();
+}
 
 // mongoose schemas
 const { Address, Tracking, User, Package } = require('./db');
