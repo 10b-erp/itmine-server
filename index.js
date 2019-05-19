@@ -26,17 +26,25 @@ app.use(bodyParser.json());
 // sign in endpoint
 app.post('/api/signin', (req, res) => {
 
+  // if already signed in error
+  if(req.session.uid) {
+    return res.send(Util.generateResponse(4, 'Already signed in.'));
+  }
+
   // get and sanitize email and password
   const email = Util.sanitize(req.body.email);
   const password = Util.sanitize(req.body.password);
 
   // find user
-  User.find({ email: email })
+  User.findOne({ email: email })
     .then(data => {
       if (data === null) {
         res.send(Util.generateResponse(1, 'Invalid credentials'));
       } else if(bcrypt.compareSync(password, data.password)) {
-        res.send(Util.generateResponse(0));
+        req.session.uid = data._id.toString();
+        req.session.save(err => {
+          res.send(Util.generateResponse(0));
+        });
       } else {
         res.send(Util.generateResponse(1, 'Invalid credentials'));
       }
@@ -47,7 +55,12 @@ app.post('/api/signin', (req, res) => {
 });
 
 // sign up endpoint
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
+
+  // if already signed in error
+  if(req.session.uid) {
+    return res.send(Util.generateResponse(4, 'Already signed in.'));
+  }
 
   // get and sanitize inputs
   const email = Util.sanitize(req.body.email);
@@ -55,18 +68,85 @@ app.post('/api/signup', (req, res) => {
   const name = Util.sanitize(req.body.name);
   const phone = Util.sanitize(req.body.phone);
 
-  const companyName = Util.sanitize(req.body.companyName);
-  const addressLine1 = Util.sanitize(req.body.addressLine1);
-  const addressLine2 = Util.sanitize(req.body.addressLine2);
-  const cityLocality = Util.sanitize(req.body.cityLocality);
-  const stateProvince = Util.sanitize(req.body.stateProvince);
-  const postalCode = Util.sanitize(req.body.postalCode);
-  const countryCode = Util.sanitize(req.body.countryCode);
+  const company = Util.sanitize(req.body.company);
+  const addressLine1 = Util.sanitize(req.body.address.addressLine1);
+  const addressLine2 = Util.sanitize(req.body.address.addressLine2);
+  const cityLocality = Util.sanitize(req.body.address.cityLocality);
+  const stateProvince = Util.sanitize(req.body.address.stateProvince);
+  const postalCode = Util.sanitize(req.body.address.postalCode);
+  const countryCode = Util.sanitize(req.body.address.countryCode);
 
-  // do stuff
-  // ...
+  console.log(email, password, name, phone, company, addressLine1, addressLine2, cityLocality, stateProvince, postalCode, countryCode);
+
+  // check if already exists
+  try {
+    const userQuery = await User.find({ email: email });
+
+    if(userQuery !== null && userQuery.length !== 0) {
+      return res.send(Util.generateResponse(2, 'Email already taken'));
+    }
+
+    const userAddress = new Address({
+      name: name,
+      phone: phone,
+      company_name: company,
+      address_line1: addressLine1,
+      address_line2: addressLine2,
+      city_locality: cityLocality,
+      state_province: stateProvince,
+      postal_code: postalCode,
+      country_code: countryCode,
+      address_residential_locator: 'no'
+    });
+    const salt = bcrypt.genSaltSync(12);
+    const passwordHash = bcrypt.hashSync(password, salt);
+    const user = await new User({
+      address: userAddress,
+      password: passwordHash,
+      email: email,
+      name: name,
+      phone: phone
+    }).save();
+
+    req.session.uid = user._id.toString();
+  } catch(err) {
+    return res.send(Util.generateResponse(3, 'Database error', {}, err));
+  }
 
   res.send(Util.generateResponse(0));
+
+});
+
+// sign out endpoint
+app.post('/api/signout', (req, res) => {
+
+  req.session.uid = null;
+  req.session.regenerate(err => {
+    req.session.uid = null;
+    req.session.save(err => {
+      res.send(Util.generateResponse(0));
+    });
+  });
+
+});
+
+// get user details
+app.post('/api/userdetails', async (req, res) => {
+
+  if(!req.session.uid) {
+    return res.send(Util.generateResponse(4, 'Need to be signed in.'));
+  }
+
+  try {
+    const userQuery = await User.findOne({_id: req.session.uid });
+    return res.send(Util.generateResponse(0, '', {
+      id: req.session.uid,
+      name: userQuery.name,
+      email: userQuery.email
+    }));
+  } catch(err) {
+    return res.send(Util.generateResponse(3, 'Database query error.'));
+  }
 
 });
 

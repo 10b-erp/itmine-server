@@ -25,6 +25,7 @@ const trackingSchema = new mongoose.Schema({
 });
 const userSchema = new mongoose.Schema({
   address: addressSchema,
+  password: String,
   email: String,
   name: String,
   phone: String
