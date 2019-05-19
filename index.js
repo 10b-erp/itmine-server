@@ -336,7 +336,7 @@ app.post('/api/setpackageweight', async (req, res) => {
         };
         sidQuery.save();
         console.log(response);
-        res.send(Util.generateResponse(0, '', sidQuery.tracking));
+        res.send(Util.generateResponse(0, '', { label: sidQuery.label_download }));
       })
       .catch(err => {
         console.log(err);
