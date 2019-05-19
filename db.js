@@ -13,6 +13,7 @@ const addressSchema = new mongoose.Schema({
   phone: String,
   company_name: String,
   address_line1: String,
+  address_line2: String,
   city_locality: String,
   state_province: String,
   postal_code: String,

@@ -16,13 +16,14 @@ const app = express();
 app.use(session({
   secret: process.env.EXPRESS_SESSION_SECRET,
   resave: true,
-  saveUnitialized: true,
+  saveUninitialized: true,
   cookie: { maxAge: 30*24*60*60*1000 }
 }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // web server endpoints
+// sign in endpoint
 app.post('/api/signin', (req, res) => {
 
   // get and sanitize email and password
@@ -43,6 +44,68 @@ app.post('/api/signin', (req, res) => {
     .catch(err => {
       res.send(Util.generateResponse(2, 'Database error', err));
     });
+});
+
+// sign up endpoint
+app.post('/api/signup', (req, res) => {
+
+  // get and sanitize inputs
+  const email = Util.sanitize(req.body.email);
+  const password = Util.sanitize(req.body.password);
+  const name = Util.sanitize(req.body.name);
+  const phone = Util.sanitize(req.body.phone);
+
+  const companyName = Util.sanitize(req.body.companyName);
+  const addressLine1 = Util.sanitize(req.body.addressLine1);
+  const addressLine2 = Util.sanitize(req.body.addressLine2);
+  const cityLocality = Util.sanitize(req.body.cityLocality);
+  const stateProvince = Util.sanitize(req.body.stateProvince);
+  const postalCode = Util.sanitize(req.body.postalCode);
+  const countryCode = Util.sanitize(req.body.countryCode);
+
+  // do stuff
+  // ...
+
+  res.send(Util.generateResponse(0));
+
+});
+
+// use shipengine api to validate and correct
+app.post('/api/validateaddress', (req, res) => {
+
+  const addressLine1 = Util.sanitize(req.body.addressLine1);
+  const addressLine2 = Util.sanitize(req.body.addressLine2);
+  const cityLocality = Util.sanitize(req.body.cityLocality);
+  const stateProvince = Util.sanitize(req.body.stateProvince);
+  const postalCode = Util.sanitize(req.body.postalCode);
+  const countryCode = Util.sanitize(req.body.countryCode);
+
+  const url = 'https://api.shipengine.com/v1/addresses/validate';
+  const data = [{
+    name: '',
+    phone: '',
+    company_name: '',
+    address_line1: addressLine1,
+    address_line2: addressLine2,
+    city_locality: cityLocality,
+    state_province: stateProvince,
+    postal_code: postalCode,
+    country_code: countryCode
+  }];
+
+  Util.makeRequest(url, data)
+    .then(response => {
+      if(response[0] && response[0].status === 'verified') {
+        res.send(Util.generateResponse(0, '', response[0].matched_address));
+      } else {
+        res.send(Util.generateResponse(1, ''));
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      res.send(Util.generateResponse(2, 'Error with database validation request'));
+    });
+
 });
 
 // listen on web server and statically serve files
