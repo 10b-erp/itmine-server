@@ -188,6 +188,50 @@ app.post('/api/validateaddress', (req, res) => {
 
 });
 
+// buy n package protections
+app.post('/api/orderpps', async (req, res) => {
+
+  // make sure signed in
+  if(!req.session.uid) {
+    return res.send(Util.generateResponse(4, 'Must be signed in to order labels'));
+  }
+
+  // get number of orders
+  const n = parseInt(req.body.n) || 0;
+  if(n <= 0) {
+    return res.send(Util.generateResponse(1, 'Invalid number of PPs ordered'));
+  } else if(n >= 10) {
+    return res.send(Util.generateResponse(1, 'Invalid number of PPs ordered (10 max at a time)'));
+  }
+
+  // create and configure packages in db
+  const array = [...new Array(n)].map(e => ({ uid: req.session.uid }));
+  try {
+    const queryResponse = await Package.insertMany(array);
+    res.send(Util.generateResponse(0));
+  } catch(err) {
+    res.send(Util.generateResponse(3, 'Database error.', {}, err));
+  }
+});
+
+// api endpoint to get packages
+app.post('/api/packages', async (req, res) => {
+
+  // check if signed in
+  if(!req.session.uid) {
+    return res.send(Util.generateResponse(4, 'You must be signed in'));
+  }
+
+  // get packages
+  try {
+    const packagesQuery = await Package.find({ uid: req.session.uid });
+    res.send(Util.generateResponse(0, '', packagesQuery));
+  } catch(err) {
+    res.send(Util.generateResponse(3, 'Database error', {}, err));
+  }
+
+});
+
 // listen on web server and statically serve files
 app.use(express.static('public'));
 app.use((req, res) => {
