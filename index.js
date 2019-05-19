@@ -1,6 +1,5 @@
 // require environment variables from .env
-import * as mongoose from "mongoose";
-
+const mongoose = require('mongoose');
 if(process.env.NODE_ENV === 'dev') {
   require('dotenv').config();
 }
