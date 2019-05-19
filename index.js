@@ -1,5 +1,9 @@
 // require environment variables from .env
-require('dotenv').config();
+import * as mongoose from "mongoose";
+
+if(process.env.NODE_ENV === 'dev') {
+  require('dotenv').config();
+}
 
 // mongoose schemas
 const { Address, Tracking, User, Package } = require('./db');
@@ -188,9 +192,136 @@ app.post('/api/validateaddress', (req, res) => {
 
 });
 
+// buy n package protections
+app.post('/api/orderpps', async (req, res) => {
+
+  // make sure signed in
+  if(!req.session.uid) {
+    return res.send(Util.generateResponse(4, 'Must be signed in to order labels'));
+  }
+
+  // get number of orders
+  const n = parseInt(req.body.n) || 0;
+  if(n <= 0) {
+    return res.send(Util.generateResponse(1, 'Invalid number of PPs ordered'));
+  } else if(n >= 10) {
+    return res.send(Util.generateResponse(1, 'Invalid number of PPs ordered (10 max at a time)'));
+  }
+
+  // create and configure packages in db
+  const array = [...new Array(n)].map(e => ({ uid: req.session.uid }));
+  try {
+    const queryResponse = await Package.insertMany(array);
+    res.send(Util.generateResponse(0));
+  } catch(err) {
+    res.send(Util.generateResponse(3, 'Database error.', {}, err));
+  }
+});
+
+// api endpoint to get packages
+app.post('/api/packages', async (req, res) => {
+
+  // check if signed in
+  if(!req.session.uid) {
+    return res.send(Util.generateResponse(4, 'You must be signed in'));
+  }
+
+  // get packages
+  try {
+    const packagesQuery = await Package.find({ uid: req.session.uid });
+    res.send(Util.generateResponse(0, '', packagesQuery));
+  } catch(err) {
+    res.send(Util.generateResponse(3, 'Database error', {}, err));
+  }
+
+});
+
+// api endpoint to found page
+app.post('/api/found', async (req, res) => {
+
+  // get sid
+  const sid = Util.sanitize(req.query.sid);
+  if(!sid || !mongoose.Types.ObjectId.isValid(sid)) {
+    return res.send(Util.generateResponse(1, 'Invalid SID'));
+  }
+
+  // get weight
+  const weight = parseInt(Util.sanitize(req.query.weight));
+  if(weight <= 0 || weight >= 10000) {
+    return res.send(Util.generateResponse(1, 'Invalid weight in ounces (<0 or >625)'));
+  }
+
+  // get email (maybe)
+  const email = Util.sanitize(req.query.email);
+
+  // query for sid
+  try {
+    const sidQuery = await Package.findOne({ _id: new mongoose.Types.ObjectId(sid) });
+
+    if(sidQuery.tracking !== null) {
+      return res.send(Util.generateResponse(1,'SID already used'));
+    }
+
+    // get user's shipping data
+    const userQuery = await User.findOne({ _id: new mongoose.Types.ObjectId(sidQuery.uid) });
+
+    // make an http request
+    const url = 'https://api.shipengine.com/v1/labels';
+    const data = {
+      "shipment": {
+        "service_code": "ups_ground",
+        "ship_to": {
+          "name": userQuery.name,
+          "phone": userQuery.phone,
+          "company_name": userQuery.company_name,
+          "address_line1": userQuery.address_line1,
+          "address_line2": userQuery.address_line2,
+          "city_locality": userQuery.city_locality,
+          "state_province": userQuery.state_province,
+          "postal_code": userQuery.postal_code,
+          "country_code": "US",
+          "address_residential_indicator": "No"
+        },
+        "ship_from": {
+          "name": "ItMine Corp.",
+          "phone": "212-224-5123",
+          "company_name": "ItMine Corp.",
+          "address_line1": "29 3rd Ave.",
+          "address_line2": "Ste. 10B",
+          "city_locality": "New York",
+          "state_province": "NY",
+          "postal_code": "10003",
+          "country_code": "US",
+          "address_residential_indicator": "No"
+        },
+        "packages": [
+          {
+            "weight": {
+              "value": weight,
+              "unit": "ounce"
+            }
+          }
+        ]
+      }
+    };
+
+    Util.makeRequest(url, data)
+      .then(response => {
+        console.log(response);
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  } catch(err) {
+    return res.send(Util.generateResponse(3, 'Database query error', {}, err));
+  }
+
+
+});
+
 // listen on web server and statically serve files
 app.use(express.static('public'));
 app.use((req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
-app.listen(process.env.port || 5000, () => console.info('Listening on port ' + (process.env.PORT || 5000)));
+app.listen(process.env.PORT || 5000, () => console.info('Listening on port ' + (process.env.PORT || 5000)));

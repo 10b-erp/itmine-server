@@ -32,7 +32,8 @@ const userSchema = new mongoose.Schema({
 });
 const packageSchema = new mongoose.Schema({
   uid: String,
-  tracking: trackingSchema
+  tracking: { type: trackingSchema, default: null },
+  purchaseDate: { type: Date, default: Date.now }
 });
 
 // defining models
